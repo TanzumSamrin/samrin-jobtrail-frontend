@@ -163,223 +163,197 @@ function ApplicationForm() {
   };
 
   if (loading) {
-    return <p>Loading application...</p>;
+    return (
+      <div className="page-container">
+        <div className="application-form-shell">
+          <div className="application-form-card loading-card">
+            <p>Loading application...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <h1>
-        {isEditMode
-          ? "Edit Application"
-          : "Add Application"}
-      </h1>
-
-      {generalError && (
-        <p>{generalError}</p>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        {/* Company */}
-        <div>
-          <label htmlFor="company">
-            Company *
-          </label>
-
-          <input
-            id="company"
-            name="company"
-            type="text"
-            value={formData.company}
-            onChange={handleChange}
-            required
-          />
-
-          {errors.company && (
-            <p>{errors.company}</p>
-          )}
-        </div>
-
-        {/* Position */}
-        <div>
-          <label htmlFor="position">
-            Position *
-          </label>
-
-          <input
-            id="position"
-            name="position"
-            type="text"
-            value={formData.position}
-            onChange={handleChange}
-            required
-          />
-
-          {errors.position && (
-            <p>{errors.position}</p>
-          )}
-        </div>
-
-        {/* Status */}
-        <div>
-          <label htmlFor="status">
-            Status
-          </label>
-
-          <select
-            id="status"
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-          >
-            <option value="WISHLIST">
-              Wishlist
-            </option>
-
-            <option value="APPLIED">
-              Applied
-            </option>
-
-            <option value="INTERVIEW">
-              Interview
-            </option>
-
-            <option value="OFFER">
-              Offer
-            </option>
-
-            <option value="REJECTED">
-              Rejected
-            </option>
-          </select>
-        </div>
-
-        {/* Job Type */}
-        <div>
-          <label htmlFor="job_type">
-            Job Type
-          </label>
-
-          <select
-            id="job_type"
-            name="job_type"
-            value={formData.job_type}
-            onChange={handleChange}
-          >
-            <option value="ONSITE">
-              Onsite
-            </option>
-
-            <option value="REMOTE">
-              Remote
-            </option>
-
-            <option value="HYBRID">
-              Hybrid
-            </option>
-          </select>
-        </div>
-
-        {/* Applied Date */}
-        <div>
-          <label htmlFor="applied_on">
-            Applied On
-          </label>
-
-          <input
-            id="applied_on"
-            name="applied_on"
-            type="date"
-            value={formData.applied_on}
-            onChange={handleChange}
-          />
-
-          {errors.applied_on && (
-            <p>{errors.applied_on}</p>
-          )}
-        </div>
-
-        {/* Expected Salary */}
-        <div>
-          <label htmlFor="expected_salary">
-            Expected Salary
-          </label>
-
-          <input
-            id="expected_salary"
-            name="expected_salary"
-            type="number"
-            min="0"
-            value={formData.expected_salary}
-            onChange={handleChange}
-          />
-
-          {errors.expected_salary && (
+    <div className="page-container">
+      <div className="application-form-shell">
+        <div className="application-form-card">
+          <div className="application-form-header">
+            <div>
+              <span className="form-tag">
+                {isEditMode ? "Update" : "New"}
+              </span>
+              <h1>
+                {isEditMode
+                  ? "Edit Application"
+                  : "Add Application"}
+              </h1>
+            </div>
             <p>
-              {errors.expected_salary}
+              Capture the role details and keep your job search organized.
             </p>
+          </div>
+
+          {generalError && (
+            <div className="auth-error-banner application-form-alert">
+              {generalError}
+            </div>
           )}
+
+          <form
+            className="application-form"
+            onSubmit={handleSubmit}
+            noValidate
+          >
+            <div className="form-grid">
+              <div className="form-field">
+                <label htmlFor="company">Company *</label>
+                <input
+                  id="company"
+                  name="company"
+                  type="text"
+                  value={formData.company}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g. Google"
+                />
+                {errors.company && (
+                  <p className="field-error">{errors.company}</p>
+                )}
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="position">Position *</label>
+                <input
+                  id="position"
+                  name="position"
+                  type="text"
+                  value={formData.position}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g. Frontend Engineer"
+                />
+                {errors.position && (
+                  <p className="field-error">{errors.position}</p>
+                )}
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="status">Status</label>
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                >
+                  <option value="WISHLIST">Wishlist</option>
+                  <option value="APPLIED">Applied</option>
+                  <option value="INTERVIEW">Interview</option>
+                  <option value="OFFER">Offer</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="job_type">Job Type</label>
+                <select
+                  id="job_type"
+                  name="job_type"
+                  value={formData.job_type}
+                  onChange={handleChange}
+                >
+                  <option value="ONSITE">Onsite</option>
+                  <option value="REMOTE">Remote</option>
+                  <option value="HYBRID">Hybrid</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="applied_on">Applied On</label>
+                <input
+                  id="applied_on"
+                  name="applied_on"
+                  type="date"
+                  value={formData.applied_on}
+                  onChange={handleChange}
+                />
+                {errors.applied_on && (
+                  <p className="field-error">{errors.applied_on}</p>
+                )}
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="expected_salary">Expected Salary</label>
+                <input
+                  id="expected_salary"
+                  name="expected_salary"
+                  type="number"
+                  min="0"
+                  value={formData.expected_salary}
+                  onChange={handleChange}
+                  placeholder="e.g. 120000"
+                />
+                {errors.expected_salary && (
+                  <p className="field-error">{errors.expected_salary}</p>
+                )}
+              </div>
+
+              <div className="form-field full-width">
+                <label htmlFor="job_link">Job Link</label>
+                <input
+                  id="job_link"
+                  name="job_link"
+                  type="url"
+                  placeholder="https://example.com/job"
+                  value={formData.job_link}
+                  onChange={handleChange}
+                />
+                {errors.job_link && (
+                  <p className="field-error">{errors.job_link}</p>
+                )}
+              </div>
+
+              <div className="form-field full-width">
+                <label htmlFor="notes">Notes</label>
+                <textarea
+                  id="notes"
+                  name="notes"
+                  rows="5"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  placeholder="Add notes about the role, interview process, or follow-up steps..."
+                />
+                {errors.notes && (
+                  <p className="field-error">{errors.notes}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="application-form-actions">
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={saving}
+              >
+                {saving
+                  ? "Saving..."
+                  : isEditMode
+                  ? "Update Application"
+                  : "Save Application"}
+              </button>
+
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={() => navigate("/applications")}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
-
-        {/* Job Link */}
-        <div>
-          <label htmlFor="job_link">
-            Job Link
-          </label>
-
-          <input
-            id="job_link"
-            name="job_link"
-            type="url"
-            placeholder="https://example.com/job"
-            value={formData.job_link}
-            onChange={handleChange}
-          />
-
-          {errors.job_link && (
-            <p>{errors.job_link}</p>
-          )}
-        </div>
-
-        {/* Notes */}
-        <div>
-          <label htmlFor="notes">
-            Notes
-          </label>
-
-          <textarea
-            id="notes"
-            name="notes"
-            rows="5"
-            value={formData.notes}
-            onChange={handleChange}
-          />
-
-          {errors.notes && (
-            <p>{errors.notes}</p>
-          )}
-        </div>
-
-        <button
-          type="submit"
-          disabled={saving}
-        >
-          {saving
-            ? "Saving..."
-            : isEditMode
-            ? "Update Application"
-            : "Save Application"}
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            navigate("/applications")
-          }
-          disabled={saving}
-        >
-          Cancel
-        </button>
-      </form>
+      </div>
     </div>
   );
 }
