@@ -5,25 +5,27 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ApplicationList from "./pages/ApplicationList";
 import ApplicationForm from "./pages/ApplicationForm";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Dashboard />} />
-
+      {/* Public routes */}
       <Route path="/login" element={<Login />} />
-
       <Route path="/register" element={<Register />} />
 
-      <Route path="/applications" element={<ApplicationList />} />
+      {/* Protected routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/applications" element={<ApplicationList />} />
+        <Route path="/applications/new" element={<ApplicationForm />} />
+        <Route
+          path="/applications/:id/edit"
+          element={<ApplicationForm />}
+        />
+      </Route>
 
-      <Route path="/applications/new" element={<ApplicationForm />} />
-
-      <Route
-        path="/applications/:id/edit"
-        element={<ApplicationForm />}
-      />
-
+      {/* Unknown route */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
