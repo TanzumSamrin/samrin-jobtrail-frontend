@@ -1,94 +1,83 @@
-import Loader from "../components/Loader";
-import EmptyState from "../components/EmptyState";
-import ErrorState from "../components/ErrorState";
 import { useEffect, useState } from "react";
-import {
-  Link,
-  useSearchParams,
-} from "react-router-dom";
+import { useSearchParams, Link, useLocation } from "react-router-dom";
 
 import {
   deleteApplication,
   getApplications,
 } from "../api/applications";
 
+import ApplicationCard from "../components/ApplicationCard";
 import ConfirmModal from "../components/ConfirmModal";
+import Loader from "../components/Loader";
+import EmptyState from "../components/EmptyState";
+import ErrorState from "../components/ErrorState";
 
 function ApplicationList() {
-  const [searchParams, setSearchParams] =
-    useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
 
-  const search =
-    searchParams.get("search") || "";
+  const search = searchParams.get("search") || "";
+  const status = searchParams.get("status") || "";
+  const page = Number(searchParams.get("page")) || 1;
 
-  const status =
-    searchParams.get("status") || "";
+  const [searchInput, setSearchInput] = useState(search);
 
-  const page =
-    Number(searchParams.get("page")) || 1;
+  const [applications, setApplications] = useState([]);
+  const [count, setCount] = useState(0);
+  const [next, setNext] = useState(null);
+  const [previous, setPrevious] = useState(null);
 
-  const [applications, setApplications] =
-    useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const [searchInput, setSearchInput] =
-    useState(search);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
-
-  const [nextPage, setNextPage] =
-    useState(null);
-
-  const [previousPage, setPreviousPage] =
-    useState(null);
-
-  const [totalCount, setTotalCount] =
-    useState(0);
-
-  const [deleteTarget, setDeleteTarget] =
-    useState(null);
-
-  const [deleteLoading, setDeleteLoading] =
-    useState(false);
-
-  const fetchApplications = async () => {
+  const loadApplications = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const data = await getApplications({
-        search: search || undefined,
-        status: status || undefined,
+      const params = {
         page,
-      });
+      };
 
-      setApplications(data.results);
-      setNextPage(data.next);
-      setPreviousPage(data.previous);
-      setTotalCount(data.count);
-    } catch (error) {
-      setError(
-        "Failed to load applications."
-      );
+      if (search) {
+        params.search = search;
+      }
+
+      if (status) {
+        params.status = status;
+      }
+
+      const data = await getApplications(params);
+
+      setApplications(data.results || []);
+      setCount(data.count || 0);
+      setNext(data.next);
+      setPrevious(data.previous);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load applications.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchApplications();
+    setSearchInput(search);
+    loadApplications();
   }, [search, status, page]);
 
-  const handleSearchSubmit = (event) => {
-    event.preventDefault();
+  const handleSearch = (e) => {
+    e.preventDefault();
 
     const params = {};
 
-    if (searchInput.trim()) {
-      params.search = searchInput.trim();
+    const trimmedSearch = searchInput.trim();
+
+    if (trimmedSearch) {
+      params.search = trimmedSearch;
     }
 
     if (status) {
@@ -100,12 +89,10 @@ function ApplicationList() {
     setSearchParams(params);
   };
 
-  const handleStatusChange = (event) => {
-    const newStatus = event.target.value;
+  const handleStatusChange = (e) => {
+    const newStatus = e.target.value;
 
-    const params = {
-      page: 1,
-    };
+    const params = {};
 
     if (search) {
       params.search = search;
@@ -115,19 +102,12 @@ function ApplicationList() {
       params.status = newStatus;
     }
 
+    params.page = 1;
+
     setSearchParams(params);
   };
 
-  const goToNextPage = () => {
-    if (!nextPage) {
-      return;
-    }
-
-    const nextUrl = new URL(nextPage);
-
-    const nextPageNumber =
-      nextUrl.searchParams.get("page");
-
+  const handlePageChange = (newPage) => {
     const params = {};
 
     if (search) {
@@ -138,33 +118,7 @@ function ApplicationList() {
       params.status = status;
     }
 
-    params.page = nextPageNumber;
-
-    setSearchParams(params);
-  };
-
-  const goToPreviousPage = () => {
-    if (!previousPage) {
-      return;
-    }
-
-    const previousUrl =
-      new URL(previousPage);
-
-    const previousPageNumber =
-      previousUrl.searchParams.get("page");
-
-    const params = {};
-
-    if (search) {
-      params.search = search;
-    }
-
-    if (status) {
-      params.status = status;
-    }
-
-    params.page = previousPageNumber;
+    params.page = newPage;
 
     setSearchParams(params);
   };
@@ -173,13 +127,7 @@ function ApplicationList() {
     setDeleteTarget(application);
   };
 
-  const handleCancelDelete = () => {
-    if (!deleteLoading) {
-      setDeleteTarget(null);
-    }
-  };
-
-  const handleConfirmDelete = async () => {
+  const handleDelete = async () => {
     if (!deleteTarget) {
       return;
     }
@@ -187,238 +135,198 @@ function ApplicationList() {
     try {
       setDeleteLoading(true);
 
-      await deleteApplication(
-        deleteTarget.id
-      );
+      await deleteApplication(deleteTarget.id);
 
-      const remainingApplications =
-        applications.filter(
-          (application) =>
-            application.id !==
-            deleteTarget.id
-        );
+      const remainingApplications = applications.filter(
+        (application) => application.id !== deleteTarget.id
+      );
 
       setDeleteTarget(null);
 
-      // Current page still has other items.
-      if (remainingApplications.length > 0) {
-        setApplications(
-          remainingApplications
-        );
-        setTotalCount(
-          (previous) => previous - 1
-        );
+      
+      if (remainingApplications.length === 0 && page > 1) {
+        handlePageChange(page - 1);
         return;
       }
 
-      // Current page became empty.
-      if (page > 1) {
-        const params = {};
-
-        if (search) {
-          params.search = search;
-        }
-
-        if (status) {
-          params.status = status;
-        }
-
-        params.page = page - 1;
-
-        setSearchParams(params);
-      } else {
-        setApplications([]);
-        setTotalCount(
-          (previous) => previous - 1
-        );
-      }
-    } catch (error) {
-      setError(
-        "Failed to delete application."
-      );
-      setDeleteTarget(null);
+      setApplications(remainingApplications);
+      setCount((currentCount) => Math.max(currentCount - 1, 0));
+    } catch (err) {
+      console.error(err);
+      setError("Failed to delete application.");
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  return (
-    <div>
-      <h1>My Applications</h1>
+  if (loading) {
+    return (
+      <main className="page-container">
+        <Loader />
+      </main>
+    );
+  }
 
-      <Link to="/applications/new">
-        Add Application
-      </Link>
-
-      <form onSubmit={handleSearchSubmit}>
-        <input
-          type="text"
-          placeholder="Search company or position..."
-          value={searchInput}
-          onChange={(event) =>
-            setSearchInput(event.target.value)
-          }
-        />
-
-        <button type="submit">
-          Search
-        </button>
-      </form>
-
-      <select
-        value={status}
-        onChange={handleStatusChange}
-      >
-        <option value="">
-          All Statuses
-        </option>
-
-        <option value="WISHLIST">
-          Wishlist
-        </option>
-
-        <option value="APPLIED">
-          Applied
-        </option>
-
-        <option value="INTERVIEW">
-          Interview
-        </option>
-
-        <option value="OFFER">
-          Offer
-        </option>
-
-        <option value="REJECTED">
-          Rejected
-        </option>
-      </select>
-
-      {loading && (
-          <Loader message="Loading applications..." />
-        
-      )}
-
-      {error && (
+  if (error) {
+    return (
+      <main className="page-container">
         <ErrorState
           message={error}
-          onRetry={fetchApplications}
+          onRetry={loadApplications}
         />
-      )}
+      </main>
+    );
+  }
 
-      {!loading &&
-        !error &&
-         applications.length === 0 && (
-          <EmptyState
-            message={
-             search || status
-              ? "No applications match your filters."
-              : "You have not added any applications yet."
-          }
-        />
-      )}
-
-      {!loading &&
-        !error &&
-        applications.length > 0 && (
-          <>
-            <p>
-              Total Applications:{" "}
-              {totalCount}
-            </p>
-
-            <div>
-              {applications.map(
-                (application) => (
-                  <div
-                    key={application.id}
-                  >
-                    <h3>
-                      {application.position}
-                    </h3>
-
-                    <p>
-                      Company:{" "}
-                      {application.company}
-                    </p>
-
-                    <p>
-                      Status:{" "}
-                      {application.status}
-                    </p>
-
-                    <p>
-                      Job Type:{" "}
-                      {application.job_type}
-                    </p>
-
-                    <p>
-                      Applied On:{" "}
-                      {application.applied_on ||
-                        "Not specified"}
-                    </p>
-
-                    <Link
-                      to={`/applications/${application.id}/edit`}
-                    >
-                      Edit
-                    </Link>
-
-                    {" "}
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleDeleteClick(
-                          application
-                        )
-                      }
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )
-              )}
-            </div>
-          </>
-        )}
-
-      {!loading && !error && (
+  return (
+    <main className="page-container">
+      {/* Header */}
+      <div className="page-header">
         <div>
+          <h1>Applications</h1>
+
+          <p className="page-subtitle">
+            Track and manage your job applications.
+          </p>
+        </div>
+
+        <Link
+          to="/applications/new"
+          className="btn btn-primary"
+        >
+          + Add Application
+        </Link>
+      </div>
+
+      {/* Success Message */}
+      {location.state?.message && (
+        <div className="success-message">
+          {location.state.message}
+        </div>
+      )}
+
+      {/* Search & Filter */}
+      <div className="filter-box">
+        <form
+          onSubmit={handleSearch}
+          className="search-form"
+        >
+          <input
+            type="text"
+            placeholder="Search company or position..."
+            value={searchInput}
+            onChange={(e) =>
+              setSearchInput(e.target.value)
+            }
+          />
+
           <button
-            onClick={goToPreviousPage}
-            disabled={!previousPage}
+            type="submit"
+            className="btn btn-primary"
+          >
+            Search
+          </button>
+        </form>
+
+        <select
+          value={status}
+          onChange={handleStatusChange}
+        >
+          <option value="">All Statuses</option>
+
+          <option value="WISHLIST">
+            Wishlist
+          </option>
+
+          <option value="APPLIED">
+            Applied
+          </option>
+
+          <option value="INTERVIEW">
+            Interview
+          </option>
+
+          <option value="OFFER">
+            Offer
+          </option>
+
+          <option value="REJECTED">
+            Rejected
+          </option>
+        </select>
+      </div>
+
+      {/* Result Count */}
+      <p className="result-count">
+        Total applications: <strong>{count}</strong>
+      </p>
+
+      {/* Applications */}
+      {applications.length === 0 ? (
+        search || status ? (
+          <EmptyState
+            message="No applications match your current filters."
+          />
+        ) : (
+          <EmptyState
+            message="No applications found. Add your first application."
+          />
+        )
+      ) : (
+        <div className="application-grid">
+          {applications.map((application) => (
+            <ApplicationCard
+              key={application.id}
+              application={application}
+              onDelete={handleDeleteClick}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {(next || previous) && (
+        <div className="pagination">
+          <button
+            className="btn btn-secondary"
+            disabled={!previous}
+            onClick={() =>
+              handlePageChange(page - 1)
+            }
           >
             Previous
           </button>
 
           <span>
-            {" "}
-            Page {page}{" "}
+            Page <strong>{page}</strong>
           </span>
 
           <button
-            onClick={goToNextPage}
-            disabled={!nextPage}
+            className="btn btn-secondary"
+            disabled={!next}
+            onClick={() =>
+              handlePageChange(page + 1)
+            }
           >
             Next
           </button>
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={Boolean(deleteTarget)}
         title="Delete Application"
         message={
           deleteTarget
-            ? `Are you sure you want to delete "${deleteTarget.position}" at "${deleteTarget.company}"?`
+            ? `Are you sure you want to delete "${deleteTarget.position} at ${deleteTarget.company}"?`
             : ""
         }
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
         loading={deleteLoading}
       />
-    </div>
+    </main>
   );
 }
 

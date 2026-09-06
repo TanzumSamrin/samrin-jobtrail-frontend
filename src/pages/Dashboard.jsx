@@ -1,6 +1,3 @@
-import Loader from "../components/Loader";
-import EmptyState from "../components/EmptyState";
-import ErrorState from "../components/ErrorState";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -10,16 +7,28 @@ import {
 } from "../api/applications";
 
 import StatCard from "../components/StatCard";
+import ApplicationCard from "../components/ApplicationCard";
+import Loader from "../components/Loader";
+import EmptyState from "../components/EmptyState";
+import ErrorState from "../components/ErrorState";
 
 function Dashboard() {
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    total: 0,
+    wishlist: 0,
+    applied: 0,
+    interview: 0,
+    offer: 0,
+    rejected: 0,
+  });
+
   const [recentApplications, setRecentApplications] =
     useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchDashboardData = async () => {
+  const loadDashboard = async () => {
     try {
       setLoading(true);
       setError("");
@@ -27,6 +36,7 @@ function Dashboard() {
       const [statsData, applicationsData] =
         await Promise.all([
           getStatistics(),
+
           getApplications({
             ordering: "-created_at",
             page: 1,
@@ -34,119 +44,132 @@ function Dashboard() {
         ]);
 
       setStats(statsData);
+
+      /*
+       * Backend pagination ব্যবহার করছে।
+       * তাই প্রথম page-এর সর্বোচ্চ 5টি application নিচ্ছি।
+       */
       setRecentApplications(
-        applicationsData.results.slice(0, 5)
+        (applicationsData.results || []).slice(0, 5)
       );
-    } catch (error) {
-      setError(
-        "Failed to load dashboard data."
-      );
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load dashboard.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    loadDashboard();
   }, []);
 
   if (loading) {
-  return (
-    <Loader message="Loading dashboard..." />
-  );
-}
+    return (
+      <main className="page-container">
+        <Loader />
+      </main>
+    );
+  }
 
   if (error) {
+    return (
+      <main className="page-container">
+        <ErrorState
+          message={error}
+          onRetry={loadDashboard}
+        />
+      </main>
+    );
+  }
+
   return (
-    <ErrorState
-      message={error}
-      onRetry={fetchDashboardData}
-    />
-  );
-}
+    <main className="page-container">
+      {/* Dashboard Header */}
+      <div className="page-header">
+        <div>
+          <h1>Dashboard</h1>
 
-  return (
-    <div>
-      <h1>Dashboard</h1>
+          <p className="page-subtitle">
+            Welcome back! Here's an overview of your
+            job applications.
+          </p>
+        </div>
 
-      <Link to="/applications/new">
-        Add Application
-      </Link>
-
-      <div>
-        <StatCard
-          title="Total"
-          value={stats?.total ?? 0}
-        />
-
-        <StatCard
-          title="Applied"
-          value={stats?.applied ?? 0}
-        />
-
-        <StatCard
-          title="Interviews"
-          value={stats?.interview ?? 0}
-        />
-
-        <StatCard
-          title="Offers"
-          value={stats?.offer ?? 0}
-        />
-
-        <StatCard
-          title="Rejected"
-          value={stats?.rejected ?? 0}
-        />
+        <Link
+          to="/applications/new"
+          className="btn btn-primary"
+        >
+          + Add Application
+        </Link>
       </div>
 
-      <h2>Recent Applications</h2>
+      {/* Statistics */}
+      <section>
+        <div className="stats-grid">
+          <StatCard
+            title="Total"
+            value={stats.total}
+          />
 
-      {recentApplications.length === 0 ? (
-  <EmptyState message="No applications yet." />
-) : (
-        <div>
-          {recentApplications.map(
-            (application) => (
-              <div
-                key={application.id}
-              >
-                <h3>
-                  {application.position}
-                </h3>
+          <StatCard
+            title="Applied"
+            value={stats.applied}
+          />
 
-                <p>
-                  {application.company}
-                </p>
+          <StatCard
+            title="Interviews"
+            value={stats.interview}
+          />
 
-                <p>
-                  Status:{" "}
-                  {application.status}
-                </p>
+          <StatCard
+            title="Offers"
+            value={stats.offer}
+          />
 
-                <p>
-                  Applied On:{" "}
-                  {application.applied_on ||
-                    "Not specified"}
-                </p>
-
-                <Link
-                  to={`/applications/${application.id}/edit`}
-                >
-                  Edit
-                </Link>
-              </div>
-            )
-          )}
+          <StatCard
+            title="Rejected"
+            value={stats.rejected}
+          />
         </div>
-      )}
+      </section>
 
-      <p>
-        <Link to="/applications">
-          View All Applications
-        </Link>
-      </p>
-    </div>
+      {/* Recent Applications */}
+      <section>
+        <div className="page-header">
+          <div>
+            <h2>Recent Applications</h2>
+
+            <p className="page-subtitle">
+              Your five most recently created applications.
+            </p>
+          </div>
+
+          <Link
+            to="/applications"
+            className="btn btn-secondary"
+          >
+            View All
+          </Link>
+        </div>
+
+        {recentApplications.length === 0 ? (
+          <EmptyState
+            message="You don't have any applications yet."
+          />
+        ) : (
+          <div className="application-grid">
+            {recentApplications.map((application) => (
+              <ApplicationCard
+                key={application.id}
+                application={application}
+                onDelete={() => {}}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
   );
 }
 
